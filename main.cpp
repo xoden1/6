@@ -10,14 +10,8 @@ struct address {
 	int appartment;
 };
 
-struct name {
-	std::string name1;
-	std::string name2;
-	std::string name3;
-};
-
 struct person {
-	name name;
+	std::string name;
 	address address;
 	char gender;
 	int age;
@@ -29,13 +23,13 @@ std::vector<person> cocktail(std::vector<person> database) {
 	while (swap) {
 		swap = false;
 		for (int i = 0; i <= database.size() - 2; i++) {
-			if ((database[i].name.name1 + database[i].name.name2 + database[i].name.name3) > (database[i + 1].name.name1 + database[i + 1].name.name2 + database[i + 1].name.name3)) {
+			if ((database[i].name) > (database[i + 1].name)) {
 				swap = true;
 				std::swap(database[i], database[i + 1]);
 			}
 		}
 		for (int i = database.size() - 2; i > 0; i--) {
-			if ((database[i].name.name1 + database[i].name.name2 + database[i].name.name3) < (database[i - 1].name.name1 + database[i - 1].name.name2 + database[i - 1].name.name3)) {
+			if ((database[i].name) < (database[i - 1].name)) {
 				swap = true;
 				std::swap(database[i], database[i - 1]);
 			}
@@ -49,9 +43,7 @@ std::ostream& operator<<(std::ostream& out, const std::vector<person>& database)
 {
 	out << database.size() << std::endl;
 	for (int i = 0; i < database.size(); i++) {
-		out << database[i].name.name1 << std::endl;
-		out << database[i].name.name2 << std::endl;
-		out << database[i].name.name3 << std::endl;
+		out << database[i].name << std::endl;
 		out << database[i].address.street << std::endl;
 		out << database[i].address.house << std::endl;
 		out << database[i].address.appartment << std::endl;
@@ -67,10 +59,9 @@ std::istream& operator>>(std::istream& in, std::vector<person>& database)
 	in >> size;
 	database.resize(size);
 	for (int i = 0; i < size; i++) {
-		in >> database[i].name.name1;
-		in >> database[i].name.name2;
-		in >> database[i].name.name3;
-		in >> database[i].address.street;
+		in.ignore();
+		std::getline(in, database[i].name);
+		std::getline(in, database[i].address.street);
 		in >> database[i].address.house;
 		in >> database[i].address.appartment;
 		in >> database[i].gender;
@@ -101,10 +92,16 @@ int write_binary(std::vector<person> database) {
 	int size = database.size();
 	stream.write(reinterpret_cast<char*>(&size), sizeof(size));
 	for (int i = 0; i < database.size(); i++) {
-		stream.write(reinterpret_cast<char*>(&database[i].name.name1), sizeof(database[i].name.name1));
-		stream.write(reinterpret_cast<char*>(&database[i].name.name2), sizeof(database[i].name.name2));
-		stream.write(reinterpret_cast<char*>(&database[i].name.name3), sizeof(database[i].name.name3));
-		stream.write(reinterpret_cast<char*>(&database[i].address.street), sizeof(database[i].address.street));
+		int sizestr = database[i].name.size();
+		stream.write(reinterpret_cast<char*>(&sizestr), sizeof(sizestr));
+		for (int j = 0; j < sizestr; j++) {
+			stream.write(reinterpret_cast<char*>(&database[i].name[j]), sizeof(database[i].name[j]));
+		}
+		size = database[i].address.street.size();
+		stream.write(reinterpret_cast<char*>(&size), sizeof(size));
+		for (int j = 0; j < size; j++) {
+			stream.write(reinterpret_cast<char*>(&database[i].address.street[j]), sizeof(database[i].address.street[j]));
+		}
 		stream.write(reinterpret_cast<char*>(&database[i].address.house), sizeof(database[i].address.house));
 		stream.write(reinterpret_cast<char*>(&database[i].address.appartment), sizeof(database[i].address.appartment));
 		stream.write(reinterpret_cast<char*>(&database[i].gender), sizeof(database[i].gender));
@@ -122,10 +119,19 @@ std::vector<person> read_binary() {
 	std::vector<person> database;
 	database.resize(size);
 	for (int i = 0; i < size; i++) {
-		stream.read(reinterpret_cast<char*>(&database[i].name.name1), sizeof(database[i].name.name1));
-		stream.read(reinterpret_cast<char*>(&database[i].name.name2), sizeof(database[i].name.name2));
-		stream.read(reinterpret_cast<char*>(&database[i].name.name3), sizeof(database[i].name.name3));
-		stream.read(reinterpret_cast<char*>(&database[i].address.street), sizeof(database[i].address.street));
+		int sizestr = 0;
+		stream.read(reinterpret_cast<char*>(&sizestr), sizeof(sizestr));
+		for (int j = 0; j < sizestr; j++) {
+			char temp;
+			stream.read(reinterpret_cast<char*>(&temp), sizeof(temp));
+			database[i].name.push_back(temp);
+		}
+		stream.read(reinterpret_cast<char*>(&sizestr), sizeof(sizestr));
+		for (int j = 0; j < sizestr; j++) {
+			char temp;
+			stream.read(reinterpret_cast<char*>(&temp), sizeof(temp));
+			database[i].address.street.push_back(temp);
+		}
 		stream.read(reinterpret_cast<char*>(&database[i].address.house), sizeof(database[i].address.house));
 		stream.read(reinterpret_cast<char*>(&database[i].address.appartment), sizeof(database[i].address.appartment));
 		stream.read(reinterpret_cast<char*>(&database[i].gender), sizeof(database[i].gender));
@@ -143,14 +149,11 @@ std::vector<person> input() {
 	std::vector<person> database(num);
 	for (int i = 0; i < num; i++) {
 		std::cout << "Enter information about a person #" << i + 1 << ":" << std::endl;
-		std::cout << "Surname: ";
-		std::cin >> database[i].name.name1;
-		std::cout << "Forname: ";
-		std::cin >> database[i].name.name2;
-		std::cout << "Middle Name: ";
-		std::cin >> database[i].name.name3;
+		std::cout << "Name: ";
+		std::cin.ignore();
+		std::getline(std::cin, database[i].name);
 		std::cout << "Street: ";
-		std::cin >> database[i].address.street;
+		std::getline(std::cin, database[i].address.street);
 		std::cout << "House: ";
 		std::cin >> database[i].address.house;
 		std::cout << "Appartment: ";
@@ -160,7 +163,7 @@ std::vector<person> input() {
 		std::cout << "Age: ";
 		std::cin >> database[i].age;
 	}
-	std::cout << "Input finished!"<< std::endl;
+	std::cout << "Input finished!" << std::endl;
 	return database;
 }
 
@@ -172,12 +175,8 @@ int output(std::vector<person> database) {
 	std::cout << "--------------------" << std::endl;
 	for (int i = 0; i < database.size(); i++) {
 		std::cout << "Information about a person #" << i + 1 << ":" << std::endl;
-		std::cout << "Surname: ";
-		std::cout << database[i].name.name1 << std::endl;
-		std::cout << "Forname: ";
-		std::cout << database[i].name.name2 << std::endl;
-		std::cout << "Middle Name: ";
-		std::cout << database[i].name.name3 << std::endl;
+		std::cout << "Name: ";
+		std::cout << database[i].name << std::endl;
 		std::cout << "Street: ";
 		std::cout << database[i].address.street << std::endl;
 		std::cout << "House: ";
